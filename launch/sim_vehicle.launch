@@ -1,0 +1,21 @@
+<launch>
+  <include file="$(find gazebo_ros)/launch/empty_world.launch"/>
+
+  <param name="robot_description"
+         command="$(find xacro)/xacro $(find ugv_sim)/urdf/ackermann_vehicle.urdf.xacro"/>
+
+  <node name="spawn_vehicle" pkg="gazebo_ros" type="spawn_model" output="screen"
+        args="-urdf -param robot_description -model gmu_ackermann -x 0 -y 0 -z 0.6"/>
+
+  <rosparam file="$(find ugv_sim)/config/vehicle_controllers.yaml" command="load"/>
+
+  <node name="controller_spawner" pkg="controller_manager" type="spawner"
+        ns="/vehicle" respawn="false" output="screen"
+        args="joint_state_controller front_left_steering_controller front_right_steering_controller rear_left_wheel_controller rear_right_wheel_controller"/>
+
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+    <remap from="joint_states" to="/vehicle/joint_states"/>
+  </node>
+
+  <node name="sim_ackermann_bridge" pkg="ugv_sim" type="sim_ackermann_bridge.py" output="screen"/>
+</launch>

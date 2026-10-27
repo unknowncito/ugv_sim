@@ -1,0 +1,246 @@
+<?xml version="1.0"?>
+<robot name="gmu_ackermann" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Size (same as the original vehicle.xacro) -->
+  <xacro:property name="body_length" value="2.0"/>
+  <xacro:property name="body_width" value="1.0"/>
+  <xacro:property name="body_height" value="0.5"/>
+  <xacro:property name="body_density" value="100.0"/>
+  <xacro:property name="wheel_radius" value="0.3"/>
+  <xacro:property name="wheel_width" value="0.1"/>
+  <xacro:property name="wheel_density" value="500.0"/>
+  <xacro:property name="max_steering_angle" value="0.6108"/>
+  <xacro:property name="max_steering_angular_velocity" value="1.570796"/>
+  <xacro:property name="max_steering_effort" value="50.0"/>
+  <xacro:property name="max_velocity" value="2.0"/>
+  <xacro:property name="max_effort" value="50.0"/>
+  <xacro:property name="camera_box_size" value="0.1"/>
+  <xacro:property name="camera_stick_size" value="0.2"/>
+  <xacro:property name="camera_height" value="1.5"/>
+  <xacro:property name="camera_pitch" value="0.1"/>
+
+  <!-- Derived -->
+  <xacro:property name="body_mass" value="${body_density * body_length * body_height * body_width}"/>
+  <xacro:property name="body_ix" value="${1.0/12.0 * body_mass * (body_height*body_height + body_width*body_width)}"/>
+  <xacro:property name="body_iy" value="${1.0/12.0 * body_mass * (body_length*body_length + body_height*body_height)}"/>
+  <xacro:property name="body_iz" value="${1.0/12.0 * body_mass * (body_length*body_length + body_width*body_width)}"/>
+  <xacro:property name="wheel_separation" value="${body_width + wheel_width}"/>
+  <xacro:property name="wheel_offset" value="${body_length/2 - wheel_radius}"/>
+  <xacro:property name="wheel_mass" value="${wheel_density * pi * wheel_radius * wheel_radius * wheel_width}"/>
+  <xacro:property name="wheel_ixy" value="${1.0/12.0 * wheel_mass * (3*wheel_radius*wheel_radius + wheel_width*wheel_width)}"/>
+  <xacro:property name="wheel_iz" value="${0.5 * wheel_mass * wheel_radius * wheel_radius}"/>
+  <xacro:property name="max_wheel_w" value="${max_velocity / wheel_radius}"/>
+
+  <!-- Macros -->
+  <xacro:macro name="wheel_link" params="name">
+    <link name="${name}_wheel_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="1.570795 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+        <material name="wheel_material"><color rgba="0 0 0 1"/></material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="1.570795 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+      </collision>
+      <inertial>
+        <mass value="${wheel_mass}"/>
+        <origin xyz="0 0 0" rpy="1.570795 0 0"/>
+        <inertia ixx="${wheel_ixy}" ixy="0" ixz="0" iyy="${wheel_ixy}" iyz="0" izz="${wheel_iz}"/>
+      </inertial>
+    </link>
+  </xacro:macro>
+
+  <xacro:macro name="steering_link" params="name">
+    <link name="${name}_steering_link">
+      <visual>
+        <geometry><cylinder radius="0.02" length="0.02"/></geometry>
+      </visual>
+      <inertial>
+        <mass value="0.5"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+    </link>
+  </xacro:macro>
+
+  <xacro:macro name="effort_transmission" params="joint">
+    <transmission name="${joint}_trans">
+      <type>transmission_interface/SimpleTransmission</type>
+      <joint name="${joint}">
+        <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      </joint>
+      <actuator name="${joint}_motor">
+        <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        <mechanicalReduction>1</mechanicalReduction>
+      </actuator>
+    </transmission>
+  </xacro:macro>
+
+  <!-- Links -->
+  <link name="body_link">
+    <visual>
+      <geometry><box size="${body_length} ${body_width} ${body_height}"/></geometry>
+      <material name="body_material"><color rgba="0.25 0.25 0.25 1"/></material>
+    </visual>
+    <collision>
+      <geometry><box size="${body_length} ${body_width} ${body_height}"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="${body_mass}"/>
+      <inertia ixx="${body_ix}" ixy="0" ixz="0" iyy="${body_iy}" iyz="0" izz="${body_iz}"/>
+    </inertial>
+  </link>
+
+  <xacro:wheel_link name="front_left"/>
+  <xacro:wheel_link name="front_right"/>
+  <xacro:wheel_link name="rear_left"/>
+  <xacro:wheel_link name="rear_right"/>
+  <xacro:steering_link name="front_left"/>
+  <xacro:steering_link name="front_right"/>
+
+  <link name="camera_stick_link">
+    <visual>
+      <geometry><box size="${camera_stick_size} ${camera_stick_size} ${camera_height}"/></geometry>
+      <material name="camera_stick_material"><color rgba="0.25 0.25 0.25 1"/></material>
+    </visual>
+    <inertial>
+      <mass value="1e-5"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+    </inertial>
+  </link>
+
+  <link name="camera_link">
+    <visual>
+      <geometry><box size="${camera_box_size} ${camera_box_size} ${camera_box_size}"/></geometry>
+      <material name="camera_material"><color rgba="0 0 0 1"/></material>
+    </visual>
+    <inertial>
+      <mass value="1e-5"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+    </inertial>
+  </link>
+
+  <!-- Joints -->
+  <joint name="front_left_steering_joint" type="revolute">
+    <origin xyz="${wheel_offset} ${wheel_separation/2} -${wheel_radius/2}" rpy="0 0 0"/>
+    <parent link="body_link"/>
+    <child link="front_left_steering_link"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="${max_steering_effort}" lower="${-max_steering_angle}" upper="${max_steering_angle}" velocity="${max_steering_angular_velocity}"/>
+    <dynamics damping="0.1" friction="0.1"/>
+  </joint>
+
+  <joint name="front_left_wheel_joint" type="continuous">
+    <parent link="front_left_steering_link"/>
+    <child link="front_left_wheel_link"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.1" friction="0.1"/>
+  </joint>
+
+  <joint name="front_right_steering_joint" type="revolute">
+    <origin xyz="${wheel_offset} ${-wheel_separation/2} -${wheel_radius/2}" rpy="0 0 0"/>
+    <parent link="body_link"/>
+    <child link="front_right_steering_link"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="${max_steering_effort}" lower="${-max_steering_angle}" upper="${max_steering_angle}" velocity="${max_steering_angular_velocity}"/>
+    <dynamics damping="0.1" friction="0.1"/>
+  </joint>
+
+  <joint name="front_right_wheel_joint" type="continuous">
+    <parent link="front_right_steering_link"/>
+    <child link="front_right_wheel_link"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.1" friction="0.1"/>
+  </joint>
+
+  <joint name="rear_left_wheel_joint" type="continuous">
+    <origin xyz="-${wheel_offset} ${wheel_separation/2} -${wheel_radius/2}" rpy="0 0 0"/>
+    <parent link="body_link"/>
+    <child link="rear_left_wheel_link"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="${max_effort}" velocity="${max_wheel_w}"/>
+    <dynamics damping="0.1" friction="0.1"/>
+  </joint>
+
+  <joint name="rear_right_wheel_joint" type="continuous">
+    <origin xyz="-${wheel_offset} ${-wheel_separation/2} -${wheel_radius/2}" rpy="0 0 0"/>
+    <parent link="body_link"/>
+    <child link="rear_right_wheel_link"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="${max_effort}" velocity="${max_wheel_w}"/>
+    <dynamics damping="0.1" friction="0.1"/>
+  </joint>
+
+  <joint name="camera_stick_joint" type="fixed">
+    <origin xyz="${body_length/2 - camera_stick_size/2} ${camera_box_size/2 + camera_stick_size/2} ${camera_height/2}" rpy="0 0 0"/>
+    <parent link="body_link"/>
+    <child link="camera_stick_link"/>
+  </joint>
+
+  <joint name="camera_joint" type="fixed">
+    <origin xyz="0 ${-camera_box_size/2 - camera_stick_size/2} ${camera_height/2}" rpy="0 ${camera_pitch} 0"/>
+    <parent link="camera_stick_link"/>
+    <child link="camera_link"/>
+  </joint>
+
+  <!-- Controlled joints -->
+  <xacro:effort_transmission joint="front_left_steering_joint"/>
+  <xacro:effort_transmission joint="front_right_steering_joint"/>
+  <xacro:effort_transmission joint="rear_left_wheel_joint"/>
+  <xacro:effort_transmission joint="rear_right_wheel_joint"/>
+
+  <!-- Gazebo Classic settings -->
+  <gazebo reference="body_link">
+    <mu1>0.0001</mu1>
+    <mu2>0.0001</mu2>
+    <material>Gazebo/Grey</material>
+  </gazebo>
+  <gazebo reference="front_left_wheel_link"><mu1>100</mu1><mu2>100</mu2><material>Gazebo/Black</material></gazebo>
+  <gazebo reference="front_right_wheel_link"><mu1>100</mu1><mu2>100</mu2><material>Gazebo/Black</material></gazebo>
+  <gazebo reference="rear_left_wheel_link"><mu1>100</mu1><mu2>100</mu2><material>Gazebo/Black</material></gazebo>
+  <gazebo reference="rear_right_wheel_link"><mu1>100</mu1><mu2>100</mu2><material>Gazebo/Black</material></gazebo>
+
+  <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/vehicle</robotNamespace>
+    </plugin>
+    <plugin name="odom_plugin" filename="libgazebo_ros_p3d.so">
+      <bodyName>body_link</bodyName>
+      <topicName>odom</topicName>
+      <frameName>world</frameName>
+      <updateRate>50.0</updateRate>
+    </plugin>
+  </gazebo>
+
+  <gazebo reference="camera_link">
+    <sensor type="camera" name="front_camera">
+      <update_rate>30</update_rate>
+      <camera name="head">
+        <horizontal_fov>1.396263</horizontal_fov>
+        <image><width>640</width><height>480</height><format>R8G8B8</format></image>
+        <clip><near>0.02</near><far>300</far></clip>
+      </camera>
+      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+        <alwaysOn>true</alwaysOn>
+        <updateRate>0.0</updateRate>
+        <cameraName>vehicle_front_camera</cameraName>
+        <imageTopicName>image_raw</imageTopicName>
+        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <frameName>camera_link</frameName>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+  <gazebo reference="body_link">
+    <sensor type="imu" name="imu_sensor">
+      <always_on>true</always_on>
+      <update_rate>50</update_rate>
+      <plugin name="imu_plugin" filename="libgazebo_ros_imu_sensor.so">
+        <topicName>imu</topicName>
+        <frameName>body_link</frameName>
+        <updateRateHZ>50.0</updateRateHZ>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+</robot>
