@@ -120,6 +120,17 @@
     </inertial>
   </link>
 
+  <link name="laser_link">
+    <visual> 
+      <geometry><cylinder radius= "0.05" length= "0.5"/></geometry>
+    </visual>
+    <inertial>
+      <mass value="1e-5"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+    </inertial>
+  </link>
+  
+
   <!-- Joints -->
   <joint name="front_left_steering_joint" type="revolute">
     <origin xyz="${wheel_offset} ${wheel_separation/2} -${wheel_radius/2}" rpy="0 0 0"/>
@@ -183,6 +194,15 @@
     <child link="camera_link"/>
   </joint>
 
+
+  <!-- Laser joint -->
+  <joint name="laser_joint" type="fixed">
+    <origin xyz="0 0 0.275" rpy="0 0 0"/>
+    <parent link="body_link"/>
+    <child link="laser_link"/>
+  </joint>
+
+
   <!-- Controlled joints -->
   <xacro:effort_transmission joint="front_left_steering_joint"/>
   <xacro:effort_transmission joint="front_right_steering_joint"/>
@@ -239,6 +259,38 @@
         <topicName>imu</topicName>
         <frameName>body_link</frameName>
         <updateRateHZ>50.0</updateRateHZ>
+      </plugin>
+    </sensor>
+  </gazebo>
+  
+  <gazebo reference="laser_link">
+    <sensor type="ray" name="laser_sensor">
+      <pose>0 0 0 0 0 0</pose>
+      <visualize>true</visualize>
+      <update_rate>10</update_rate>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>720</samples>
+            <resolution>1</resolution>
+            <min_angle>-1.570796</min_angle>
+            <max_angle>1.570796</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.12</min>
+          <max>3.5</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.01</stddev>
+        </noise>
+      </ray>
+      <plugin name="gazebo_ros_laser_controller" filename="libgazebo_ros_laser.so">
+        <topicName>scan</topicName>
+        <frameName>laser_link</frameName>
       </plugin>
     </sensor>
   </gazebo>

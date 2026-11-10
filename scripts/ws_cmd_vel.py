@@ -20,7 +20,7 @@ pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
 lock = threading.Lock()
 latest = {"v": 0.0, "w": 0.0, "t": 0.0}         # t = time of last good message
 
-
+##limiter
 def clamp(x, lim):
     return max(-lim, min(lim, x))
 

@@ -19,11 +19,11 @@ KEYS = {
     "s": (-0.3, 0.0),    # reverse
     ",": (0.0, 0.0),     # stop
 }
-
+# start the server 
 def run(host: str, port: int) -> None:
     cmd = [(0.0, 0.0)]   # list so nested callbacks/threads can mutate
     server = WebsocketServer(host=host, port=port)
-
+    # callbacks
     def on_new_client(client, server):
         print(f"client connected (id {client['id']})")
 
@@ -36,7 +36,7 @@ def run(host: str, port: int) -> None:
             msg = {"type": "cmd_vel", "data": {"linear": linear, "angular": angular}}
             server.send_message_to_all(json.dumps(msg))
             time.sleep(1.0 / SEND_HZ)
-
+    
     server.set_fn_new_client(on_new_client)
     server.set_fn_client_left(on_client_left)
 
